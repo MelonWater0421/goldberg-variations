@@ -417,6 +417,200 @@ dialog::backdrop { background: rgba(2, 6, 23, 0.72); backdrop-filter: blur(4px);
   .piano88 { height: 48px; }
 }
 
+/* ==================== DUAL-REALM TABS & BAROQUE ASTROLABE THEATER ==================== */
+.view-stack { display: flex; flex-direction: column; gap: 18px; }
+.realm-tabs {
+  display: inline-flex;
+  background: var(--bg);
+  border: 1px solid rgba(245, 158, 11, 0.42);
+  border-radius: 12px;
+  padding: 3px;
+  gap: 3px;
+}
+.realm-tab {
+  border: 0;
+  border-radius: 9px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.realm-tab:hover:not(.selected) { color: var(--text); background: var(--bg-elev); }
+.realm-tab.selected {
+  background: var(--gold);
+  color: #090d16;
+  box-shadow: 0 2px 12px rgba(245, 158, 11, 0.35);
+}
+.new-pill {
+  font: 800 9px ui-monospace, monospace;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.22);
+  color: var(--cyan);
+  border: 1px solid rgba(56, 189, 248, 0.5);
+}
+.realm-tab.selected .new-pill { background: #090d16; color: var(--gold); border-color: #090d16; }
+
+.astrolabe-theater { width: 100%; }
+.astro-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.18fr) minmax(0, 0.92fr);
+  gap: 16px;
+  align-items: start;
+}
+.astro-stage-card {
+  background: radial-gradient(circle at 50% 44%, color-mix(in srgb, var(--gold) 11%, var(--panel)), var(--panel) 68%);
+  border: 1px solid rgba(245, 158, 11, 0.38);
+  border-radius: 18px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: background 0.45s, border-color 0.45s;
+}
+.astro-stage-card.minor-eclipse {
+  background: radial-gradient(circle at 50% 44%, color-mix(in srgb, #6366f1 22%, var(--panel)), var(--panel) 70%);
+  border-color: rgba(192, 132, 252, 0.55);
+}
+.astro-stage-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+.astro-stage-top h2 { font-size: 18px; line-height: 1.35; }
+.climate-badge {
+  font: 700 11.5px ui-monospace, monospace;
+  padding: 4px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.climate-badge.major { background: var(--gold-soft); color: var(--gold); border: 1px solid rgba(245, 158, 11, 0.5); }
+.climate-badge.minor { background: var(--violet-soft); color: var(--violet); border: 1px solid rgba(192, 132, 252, 0.6); }
+
+.astro-canvas-wrap {
+  position: relative;
+  width: min(560px, 100%);
+  aspect-ratio: 1 / 1;
+  margin: 0 auto;
+}
+#astrolabeCanvas { width: 100%; height: 100%; display: block; cursor: pointer; border-radius: 50%; }
+.astro-tip {
+  position: absolute;
+  pointer-events: none;
+  background: #090d16ee;
+  color: #f8fafc;
+  border: 1px solid rgba(245, 158, 11, 0.6);
+  border-radius: 8px;
+  padding: 4px 9px;
+  font-size: 11.5px;
+  z-index: 10;
+  max-width: 240px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+}
+.astro-hint { text-align: center; font-size: 11.5px; line-height: 1.5; }
+.astro-toolbar { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; padding-top: 2px; }
+.mode-demo-btn { font-size: 11px; font-weight: 700; padding: 4px 9px; }
+.mode-demo-btn.major-btn { color: var(--gold); border-color: rgba(245, 158, 11, 0.45); background: var(--gold-soft); }
+.mode-demo-btn.minor-btn { color: var(--violet); border-color: rgba(192, 132, 252, 0.45); background: var(--violet-soft); }
+
+.astro-decoder-col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.mystery-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  padding: 14px 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.theme-mystery { border-left: 3px solid var(--gold); }
+.canon-mystery { border-left: 3px solid var(--cyan); }
+.mod-mystery { border-left: 3px solid var(--violet); }
+.mystery-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.mystery-head h3 { font-size: 14.5px; color: var(--text); }
+.disguise-badge { font: 700 11px ui-monospace, monospace; color: var(--gold); background: var(--gold-soft); border: 1px solid rgba(245, 158, 11, 0.45); padding: 2px 8px; border-radius: 999px; }
+.canon-badge { font: 700 11px ui-monospace, monospace; color: var(--cyan); background: var(--cyan-soft); border: 1px solid rgba(56, 189, 248, 0.45); padding: 2px 8px; border-radius: 999px; }
+.key-badge { font: 700 11px ui-monospace, monospace; color: var(--emerald); background: var(--emerald-soft); border: 1px solid rgba(52, 211, 153, 0.45); padding: 2px 8px; border-radius: 999px; }
+.key-badge.minor { color: var(--violet); background: var(--violet-soft); border-color: rgba(192, 132, 252, 0.55); }
+.mystery-card p { font-size: 13px; color: var(--muted); line-height: 1.78; }
+
+.skeleton-tracker {
+  display: grid;
+  grid-template-columns: 1fr 1.55fr 1fr;
+  gap: 6px;
+  margin-top: 2px;
+}
+.skel-slot {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 6px 8px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+  min-width: 0;
+}
+.skel-slot b { display: block; font: 700 12px ui-monospace, monospace; color: var(--text); }
+.skel-slot.active-skel {
+  background: var(--gold-soft);
+  border-color: var(--gold);
+  color: var(--gold);
+}
+.skel-slot.active-skel b { color: var(--gold); font-size: 12.5px; }
+
+.mystery-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.mystery-actions button { font-size: 11px; padding: 4px 9px; }
+
+.quadrant-stepper {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+.quad-step {
+  text-align: left;
+  padding: 6px 9px;
+  border-radius: 9px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  font-size: 11.5px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.quad-step small { font-size: 10px; color: var(--faint); }
+.quad-step.active {
+  border-color: var(--gold);
+  background: var(--gold-soft);
+  color: var(--gold);
+}
+.quad-step.active.q-minor {
+  border-color: var(--violet);
+  background: var(--violet-soft);
+  color: var(--violet);
+}
+.quadrant-live-box {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 11px;
+  font-size: 12.5px;
+  color: var(--text);
+  line-height: 1.7;
+}
+.quadrant-live-box b { color: var(--gold); }
+
+@media (max-width: 1020px) {
+  .astro-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .realm-tabs { width: 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .realm-tab { justify-content: center; font-size: 11px; padding: 5px 6px; }
+  .astro-stage-card { padding: 12px; }
+  .skeleton-tracker { grid-template-columns: 1fr; }
+  .quadrant-stepper { grid-template-columns: 1fr; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }

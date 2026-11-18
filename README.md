@@ -3,7 +3,14 @@
 
 An interactive, zero-sheet-music-prerequisite bilingual (`中文 / English`) listening and visual architecture laboratory built around **Yunchan Lim's April 25, 2025 Live at Carnegie Hall** recording (Decca Classics, 32 tracks).
 
-## Architectural Innovations for Complete Beginners ("不识谱也能从 0 听懂")
+## Dual-Realm Architecture for Complete Beginners ("不识谱也能从 0 听懂")
+- **Tab 1 (`🏛️ 经典建筑解剖台 · Classic Architecture Lab`)**: Preserves the complete linear laboratory—60-second Zero-Jargon Sandbox, 32-Pillar Real-Time Compass, Same-Pillar Lock Teleport, 60-fps Multi-Voice Ribbon + 88-Key Crossing Visualizer, and the 10-Triad Cathedral Matrix.
+- **Tab 2 (`🪐 巴洛克环形星盘剧场 · Baroque Rose Astrolabe Theater`)**: Transforms the 32 variations into a sacred Ouroboros circular clockwork & stained-glass rose window with a live **Three-Mystery Beginner Decoder**:
+  1. **🎯 Disguised Theme Laser Spotlight (`🔍 激光揪出变形骨架音` + `🔔 同步轻敲隐藏骨架音`)**: Pinpoints all `2,016` score-verified backbone notes (`◆`) hidden inside Bach's dense figuration and optionally pings a Carnegie-Hall-pitch-matched crystal chime alongside Yunchan Lim's playing.
+  2. **🪞 Sacred-Geometry Canon Echo Filaments & Mirror Ring**: Draws curved Bézier chords (`Dux ──↷──▶ Comes`) across the exact beat lag on all 9 Canons (`1st → 9th`) plus a dashed radial Mirror Circle on inverted Canons (`Var. 12` & `Var. 15`).
+  3. **🎨 Solar G-Major vs. Lunar Eclipse G-Minor & 4 Harmonic Quadrants**: Shifts the entire astrolabe into deep indigo eclipse on `Var. 15, 21, 25`, provides a 4-second Major-vs-Minor ear comparison, and tracks the 4 eight-pillar internal climate zones (`Home G` → `Dominant D via #14 C#` → `Minor Forest e/c` → `Homecoming G`).
+
+## Original Highlights
 1. **🎓 60-Second Zero-Jargon Interactive Sandbox (`#primerSection`)**:
    - **Step 1 · Ground-Bass Floorplan ("换房不换地基")**: Hear Bach's 8 opening Ground Bass pillars (`G–F#–E–D–B–C–D–G`) alone via Web Audio, then layer the *Aria*, *Var. 1 (Polonaise)*, and *Var. 30 (Quodlibet)* over the exact same glowing foundation.
    - **Step 2 · Shadow Canon vs. Water-Mirror Canon**: Live dual-ribbon visualizer contrasting *Var. 3* (Unison shadow chase) with *Var. 15* (Inverted mirror canon at the 5th across a horizontal symmetry axis).

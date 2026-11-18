@@ -4,13 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#090d16">
-  <meta name="description" content="巴赫《哥德堡变奏曲》BWV 988 零基础双语互动建筑馆（任奫灿 Yunchan Lim · 2025 卡内基音乐厅现场），从什么是变奏开始，搭载32根黄金地基罗盘、多声部丝带卷帘与88键交叉透视琴键。">
+  <meta name="description" content="巴赫《哥德堡变奏曲》BWV 988 零基础双语互动建筑馆与巴洛克环形星盘剧场（任奫灿 Yunchan Lim · 2025 卡内基音乐厅现场），搭载变形主题激光寻宝、卡农镜像星盘与四象限变调温度计。">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
-  <title>Goldberg Variations · 巴赫《哥德堡变奏曲》零基础互动建筑馆 (Yunchan Lim · Carnegie Hall)</title>
-  <link rel="stylesheet" href="style.css?v=gb1">
-  <script defer src="data.js?v=gb1"></script>
-  <script defer src="engine.js?v=gb1"></script>
-  <script defer src="app.js?v=gb1"></script>
+  <title>Goldberg Variations · 巴赫《哥德堡变奏曲》互动建筑馆 & 巴洛克环形星盘剧场 (Yunchan Lim · Carnegie Hall)</title>
+  <link rel="stylesheet" href="style.css?v=gb2">
+  <script defer src="data.js?v=gb2"></script>
+  <script defer src="engine.js?v=gb2"></script>
+  <script defer src="app.js?v=gb2"></script>
 </head>
 <body>
 <a class="skip" href="#content" id="skipLink">跳到主内容</a>
@@ -25,10 +25,17 @@
           <h1 id="consoleTitle">巴赫《哥德堡变奏曲》零基础互动建筑馆</h1>
           <p>
             <span class="rec-pill" id="recBadge">Yunchan Lim · Live at Carnegie Hall (2025)</span>
-            <span class="desktop-only quiet" id="consoleSub"> · 32根承重地基 · 九重卡农阶梯 · 88键声部透视</span>
+            <span class="desktop-only quiet" id="consoleSub"> · 32根承重地基 · 九重卡农阶梯 · 巴洛克环形星盘</span>
           </p>
         </div>
       </div>
+
+      <!-- DUAL-REALM MODE SWITCHER TABS -->
+      <div class="realm-tabs" role="tablist" aria-label="视图模式切换 / View Mode">
+        <button id="tabClassic" role="tab" aria-selected="true" class="realm-tab selected" data-view-mode="classic">🏛️ 经典建筑解剖台</button>
+        <button id="tabAstrolabe" role="tab" aria-selected="false" class="realm-tab" data-view-mode="astrolabe">🪐 巴洛克环形星盘剧场 <span class="new-pill">NEW</span></button>
+      </div>
+
       <div class="utilities">
         <button id="btnPrimerNav" class="gold-soft">🎓 零基础三步懂变奏</button>
         <button id="btnMatrixNav">🗺️ 32章建筑图</button>
@@ -95,102 +102,165 @@
 </header>
 
 <main id="content">
-  <!-- 1. ZERO-TO-ONE INTERACTIVE PRIMER FOR COMPLETE BEGINNERS -->
-  <section id="primerSection" class="panel primer-panel">
-    <div class="section-head">
-      <div>
-        <span class="eyebrow" id="primerEyebrow">ZERO-JARGON INTERACTIVE SANDBOX · 零识谱互动入门</span>
-        <h2 id="primerHeadline">从零开始：不识谱，怎么在 60 秒内听懂《哥德堡变奏曲》？</h2>
-        <p id="primerIntro" class="quiet"></p>
-      </div>
-      <button id="togglePrimerBody" class="secondary-small">收起入门沙盒 ▲</button>
-    </div>
-    <div id="primerBody" class="primer-grid"></div>
-  </section>
-
-  <!-- 2. CURRENT VARIATION ARCHITECTURAL DECODER -->
-  <section id="chapterHero" class="panel hero-panel">
-    <div class="hero-top">
-      <div>
-        <div class="hero-badges" id="heroBadges"></div>
-        <h2 id="chapterTitle">Aria</h2>
-        <p id="chapterSubtitle" class="quiet"></p>
-      </div>
-      <div class="hero-actions">
-        <a id="scorePdfLink" class="score-link" href="#" target="_blank" rel="noopener noreferrer">📖 查看原版乐谱页 ↗</a>
-      </div>
-    </div>
-    <div class="decoder-cards">
-      <article class="decoder-card hook-card">
-        <h3 id="hookHeading">👂 小白前 5 秒怎么听？</h3>
-        <p id="chapterHook"></p>
-      </article>
-      <article class="decoder-card recipe-card">
-        <h3 id="recipeHeading">🏛️ 巴赫的变奏配方</h3>
-        <p id="chapterRecipe"></p>
-      </article>
-      <article class="decoder-card lim-card">
-        <h3 id="limHeading">🎹 任奫灿卡内基现场密码</h3>
-        <p id="chapterLimNote"></p>
-      </article>
-    </div>
-  </section>
-
-  <!-- 3. LIVE MULTI-VOICE RIBBON + 88-KEY PIANO VISUALIZER -->
-  <section id="voiceLab" class="panel lab-panel">
-    <div class="lab-head">
-      <div>
-        <div class="lab-title-row">
-          <span class="lab-badge" id="labBadge">声部透视镜</span>
-          <h2 id="labTitle">多声部丝带卷帘 & 88键声部交叉透视琴键</h2>
-          <span id="crossingBadge" class="crossing-badge" hidden>⇄ 声部高低交叉中！</span>
+  <!-- ==================== VIEW 1: CLASSIC ARCHITECTURE LAB (PRESERVED 100%) ==================== -->
+  <div id="classicView" class="view-stack">
+    <section id="primerSection" class="panel primer-panel">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow" id="primerEyebrow">ZERO-JARGON INTERACTIVE SANDBOX · 零识谱互动入门</span>
+          <h2 id="primerHeadline">从零开始：不识谱，怎么在 60 秒内听懂《哥德堡变奏曲》？</h2>
+          <p id="primerIntro" class="quiet"></p>
         </div>
-        <p id="labDesc" class="quiet">播放任奫灿卡内基原声时，下方声部丝带与 88 键钢琴将实时同步点亮；你也可以点击「拆解单声部合成试听」单独静音或独奏任意一根旋律线。</p>
+        <button id="togglePrimerBody" class="secondary-small">收起入门沙盒 ▲</button>
       </div>
-      <div class="lab-controls">
-        <button id="synthPlayBtn" class="synth-btn">🎹 拆解合成试听当前段</button>
-        <button id="ghostBassBtn" class="pill-toggle" aria-pressed="false" title="在合成试听中叠加巴赫原始32音黄金地基钟声">🔔 叠加黄金地基钟声</button>
-        <button id="resetVoicesBtn" class="secondary-small">重置全部声部</button>
+      <div id="primerBody" class="primer-grid"></div>
+    </section>
+
+    <section id="chapterHero" class="panel hero-panel">
+      <div class="hero-top">
+        <div>
+          <div class="hero-badges" id="heroBadges"></div>
+          <h2 id="chapterTitle">Aria</h2>
+          <p id="chapterSubtitle" class="quiet"></p>
+        </div>
+        <div class="hero-actions">
+          <a id="scorePdfLink" class="score-link" href="#" target="_blank" rel="noopener noreferrer">📖 查看原版乐谱页 ↗</a>
+        </div>
+      </div>
+      <div class="decoder-cards">
+        <article class="decoder-card hook-card">
+          <h3 id="hookHeading">👂 小白前 5 秒怎么听？</h3>
+          <p id="chapterHook"></p>
+        </article>
+        <article class="decoder-card recipe-card">
+          <h3 id="recipeHeading">🏛️ 巴赫的变奏配方</h3>
+          <p id="chapterRecipe"></p>
+        </article>
+        <article class="decoder-card lim-card">
+          <h3 id="limHeading">🎹 任奫灿卡内基现场密码</h3>
+          <p id="chapterLimNote"></p>
+        </article>
+      </div>
+    </section>
+
+    <section id="voiceLab" class="panel lab-panel">
+      <div class="lab-head">
+        <div>
+          <div class="lab-title-row">
+            <span class="lab-badge" id="labBadge">声部透视镜</span>
+            <h2 id="labTitle">多声部丝带卷帘 & 88键声部交叉透视琴键</h2>
+            <span id="crossingBadge" class="crossing-badge" hidden>⇄ 声部高低交叉中！</span>
+          </div>
+          <p id="labDesc" class="quiet"></p>
+        </div>
+        <div class="lab-controls">
+          <button id="synthPlayBtn" class="synth-btn">🎹 拆解合成试听当前段</button>
+          <button id="ghostBassBtn" class="pill-toggle" aria-pressed="false" title="在合成试听中叠加巴赫原始32音黄金地基钟声">🔔 叠加黄金地基钟声</button>
+          <button id="resetVoicesBtn" class="secondary-small">重置全部声部</button>
+        </div>
+      </div>
+
+      <div id="voiceControls" class="voice-controls"></div>
+
+      <div class="ribbon-wrap">
+        <canvas id="ribbonCanvas" height="190"></canvas>
+      </div>
+
+      <div class="keyboard-wrap">
+        <div class="keyboard-caption">
+          <span id="kbCaptionLeft">88键施坦威音区透视（低音 A0 → 高音 C8 · 颜色对应上方独立声部）</span>
+          <span id="kbActiveNotes" class="mono-gold">—</span>
+        </div>
+        <div id="piano88" class="piano88" role="img" aria-label="88-key virtual piano"></div>
+      </div>
+    </section>
+
+    <section id="stagesSection" class="panel stages-panel">
+      <div class="section-head">
+        <div>
+          <h2 id="stagesHeading">本章分段导览与关键听点</h2>
+          <p id="stagesSub" class="quiet"></p>
+        </div>
+      </div>
+      <div id="stagesGrid" class="stages-grid"></div>
+    </section>
+
+    <section id="matrixSection" class="panel matrix-panel">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow" id="matrixEyebrow">ARCHITECTURAL MASTERPLAN · 十组三联画与对称双翼</span>
+          <h2 id="matrixHeading">哥德堡宇宙全景建筑图</h2>
+          <p id="matrixSub" class="quiet"></p>
+        </div>
+      </div>
+      <div id="matrixFilters" class="matrix-filters"></div>
+      <div id="matrixContainer" class="matrix-container"></div>
+    </section>
+  </div>
+
+  <!-- ==================== VIEW 2: BAROQUE ASTROLABE THEATER ==================== -->
+  <section id="astrolabeView" class="astrolabe-theater" hidden aria-label="Baroque Astrolabe Theater">
+    <div class="astro-grid">
+      <!-- Left: Sacred Circular Rose Astrolabe -->
+      <div class="astro-stage-card" id="astroStageCard">
+        <div class="astro-stage-top">
+          <div>
+            <span class="eyebrow" id="astroEyebrow">BAROQUE ROSE ASTROLABE · 衔尾蛇环形星盘</span>
+            <h2 id="astroStageTitle">Aria · 黄金日晷</h2>
+          </div>
+          <span id="astroClimateBadge" class="climate-badge major">☀️ G大调 · 明朗日晷</span>
+        </div>
+
+        <div class="astro-canvas-wrap" id="astroCanvasWrap">
+          <canvas id="astrolabeCanvas" width="600" height="600"></canvas>
+          <div id="astroHoverTip" class="astro-tip" hidden></div>
+        </div>
+
+        <p class="astro-hint quiet" id="astroCanvasHint">外圈 32 颗星辰＝全曲 32 章（点击切曲）· 中圈 16 格彩窗＝当前半场和声立柱（点击跳听）· 内圈光轨＝多声部旋律高低与追逐</p>
+
+        <div class="astro-toolbar">
+          <button id="astroSpotlightBtn" class="pill-toggle active" aria-pressed="true">🔍 激光圈出变形骨架音：开</button>
+          <button id="astroPingBtn" class="pill-toggle" aria-pressed="false" title="播放任奫灿原声时，在每小节隐藏骨架音处同步轻敲一声水晶提示音">🔔 同步轻敲隐藏骨架音：关</button>
+          <button id="astroCanonArcBtn" class="pill-toggle active" aria-pressed="true">⏳ 卡农追逐连线：开</button>
+          <button id="astroMajorDemoBtn" class="mode-demo-btn major-btn">🌞 听大调原貌 (4s)</button>
+          <button id="astroMinorDemoBtn" class="mode-demo-btn minor-btn">🌑 听变小调黑化 (4s)</button>
+        </div>
+      </div>
+
+      <!-- Right: Live Three-Mystery Beginner Decoder -->
+      <div class="astro-decoder-col">
+        <!-- Mystery 1: Where is the Disguised Theme? -->
+        <article class="mystery-card theme-mystery">
+          <div class="mystery-head">
+            <h3 id="mys1Title">🎯 盲区一：被揉搓变形后的主题藏在哪？</h3>
+            <span id="disguiseBadge" class="disguise-badge">隐身度 ★☆☆☆☆ · 原石裸露</span>
+          </div>
+          <p id="mys1Body"></p>
+          <div class="skeleton-tracker" id="liveSkeletonTracker"></div>
+        </article>
+
+        <!-- Mystery 2: How does Canon / Counterpoint work here? -->
+        <article class="mystery-card canon-mystery">
+          <div class="mystery-head">
+            <h3 id="mys2Title">🪞 盲区二：卡农追逐与声部机关怎么听？</h3>
+            <span id="canonFormulaBadge" class="canon-badge">对位织体</span>
+          </div>
+          <p id="mys2Body"></p>
+          <div class="mystery-actions" id="mys2Actions"></div>
+        </article>
+
+        <!-- Mystery 3: How does Key Change / Modulation feel? -->
+        <article class="mystery-card mod-mystery">
+          <div class="mystery-head">
+            <h3 id="mys3Title">🎨 盲区三：变调与四季冷暖怎么感知？</h3>
+            <span id="macroKeyBadge" class="key-badge">☀️ G大调</span>
+          </div>
+          <p id="mys3Body"></p>
+          <div class="quadrant-stepper" id="quadrantStepper"></div>
+          <div class="quadrant-live-box" id="quadrantLiveBox"></div>
+        </article>
       </div>
     </div>
-
-    <div id="voiceControls" class="voice-controls"></div>
-
-    <div class="ribbon-wrap">
-      <canvas id="ribbonCanvas" height="190"></canvas>
-    </div>
-
-    <div class="keyboard-wrap">
-      <div class="keyboard-caption">
-        <span id="kbCaptionLeft">88键施坦威音区透视（低音 A0 → 高音 C8 · 颜色对应上方独立声部）</span>
-        <span id="kbActiveNotes" class="mono-gold">—</span>
-      </div>
-      <div id="piano88" class="piano88" role="img" aria-label="88-key virtual piano"></div>
-    </div>
-  </section>
-
-  <!-- 4. STRUCTURAL STAGES & CLICKABLE EAR-CUES -->
-  <section id="stagesSection" class="panel stages-panel">
-    <div class="section-head">
-      <div>
-        <h2 id="stagesHeading">本章分段导览与关键听点</h2>
-        <p id="stagesSub" class="quiet">点击任意段落卡或时间胶囊即可精准跳转至任奫灿现场对应乐句。</p>
-      </div>
-    </div>
-    <div id="stagesGrid" class="stages-grid"></div>
-  </section>
-
-  <!-- 5. 32-CHAPTER ARCHITECTURAL CATHEDRAL MATRIX (10 TRIADS) -->
-  <section id="matrixSection" class="panel matrix-panel">
-    <div class="section-head">
-      <div>
-        <span class="eyebrow" id="matrixEyebrow">ARCHITECTURAL MASTERPLAN · 十组三联画与对称双翼</span>
-        <h2 id="matrixHeading">哥德堡宇宙全景建筑图（Aria → 10组「舞曲 · 炫技 · 卡农」三联画 → Aria da capo）</h2>
-        <p id="matrixSub" class="quiet">巴赫并不是随便写了30首变奏：每3首组成一组「1 性格体裁 · 2 双排键炫技 · 3 卡农阶梯（从一度一直爬升到九度！）」，并在第16变奏以宏伟的法国序曲将全曲对折为上下两翼。</p>
-      </div>
-    </div>
-    <div id="matrixFilters" class="matrix-filters"></div>
-    <div id="matrixContainer" class="matrix-container"></div>
   </section>
 
   <footer class="footer">

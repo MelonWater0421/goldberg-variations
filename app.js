@@ -1,5 +1,5 @@
 /* J.S. Bach · Goldberg Variations, BWV 988 (Yunchan Lim · Live at Carnegie Hall, 2025)
- * Interactive Zero-Jargon Architecture Lab & 32-Pillar Multi-Voice Visualizer. */
+ * Dual-Realm Interactive Engine: Classic Architecture Lab + Baroque Circular Astrolabe Theater. */
 (()=>{
   'use strict';
   const D=window.GOLDBERG_DATA, M=D.metadata||{}, E=window.GOLDBERG_ENGINE;
@@ -11,8 +11,11 @@
   let saved={};
   try{saved=JSON.parse(localStorage.getItem(storageKey)||'{}')||{};}catch{}
 
+  const initView=(location.hash==='#astrolabe'||saved.viewMode==='astrolabe')?'astrolabe':'classic';
+
   const state={
     index:E.clamp(saved.index??0,0,D.tracks.length-1),
+    viewMode:initView,
     lang:saved.lang==='en'?'en':'zh',
     theme:saved.theme==='light'?'light':'dark',
     speed:[0.75,1,1.25].includes(saved.speed)?saved.speed:1,
@@ -22,6 +25,9 @@
     primerOpen:saved.primerOpen!==false,
     matrixFilter:'all',
     ghostBass:false,
+    astroSpotlight:saved.astroSpotlight!==false,
+    astroPing:Boolean(saved.astroPing),
+    astroCanonArc:saved.astroCanonArc!==false,
     muted:{},
     positions:saved.positions||{}
   };
@@ -34,9 +40,10 @@
   const store=()=>{
     try{
       localStorage.setItem(storageKey,JSON.stringify({
-        index:state.index,lang:state.lang,theme:state.theme,speed:state.speed,
-        pillarLock:state.pillarLock,continuous:state.continuous,
-        primerOpen:state.primerOpen,positions:state.positions
+        index:state.index,viewMode:state.viewMode,lang:state.lang,theme:state.theme,
+        speed:state.speed,pillarLock:state.pillarLock,continuous:state.continuous,
+        primerOpen:state.primerOpen,astroSpotlight:state.astroSpotlight,
+        astroPing:state.astroPing,astroCanonArc:state.astroCanonArc,positions:state.positions
       }));
     }catch{}
   };
@@ -49,7 +56,9 @@
   let synthCtx=null, synthNodes=[], synthGains=[], synthTimer=null, synthAnim=null;
   let synthState={active:false,mode:null,startAt:0,q0:0,q1:0,bpm:96,trackIdx:0};
   let primerMode={canon:'v3'};
-  let rafId=null, lastLitKeys=new Set(), lastPillarKey='', lastStageIdx=-1;
+  let rafId=null, lastLitKeys=new Set(), lastPillarKey='', lastStageIdx=-1, lastAstroLiveKey='';
+  let lastPingKey='';
+  let astroHitStars=[], astroHitWedges=[];
 
   const PILLAR_MIDI=[
     55,54,52,50,47,48,50,43,
@@ -101,21 +110,22 @@
     renderVisualFrame();
   }
 
-  function schedulePianoNote(ctx,midi,at,dur,dest,tone='voice'){
-    const freq=440*Math.pow(2,(midi-69)/12);
+  function schedulePianoNote(ctx,midi,at,dur,dest,tone='voice',detuneSemi=0){
+    const freq=440*Math.pow(2,(midi+detuneSemi-69)/12);
     const osc1=ctx.createOscillator(), osc2=ctx.createOscillator();
     const filter=ctx.createBiquadFilter(), gain=ctx.createGain();
-    if(tone==='ghost'){
+    if(tone==='ghost'||tone==='ping'){
       osc1.type='sine';osc1.frequency.value=freq;
       osc2.type='triangle';osc2.frequency.value=freq*2;
-      filter.type='lowpass';filter.frequency.value=900;
-      const d=Math.min(Math.max(dur,0.35),1.8);
+      filter.type='lowpass';filter.frequency.value=tone==='ping'?1800:900;
+      const d=tone==='ping'?0.65:Math.min(Math.max(dur,0.35),1.8);
+      const pk=tone==='ping'?0.14:0.16;
       gain.gain.setValueAtTime(0,at);
-      gain.gain.linearRampToValueAtTime(0.16,at+0.015);
-      gain.gain.exponentialRampToValueAtTime(0.002,at+d);
+      gain.gain.linearRampToValueAtTime(pk,at+0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0015,at+d);
       osc1.connect(filter);osc2.connect(filter);filter.connect(gain);gain.connect(dest);
       osc1.start(at);osc2.start(at);osc1.stop(at+d+0.03);osc2.stop(at+d+0.03);
-      synthNodes.push(osc1,osc2);
+      if(tone!=='ping')synthNodes.push(osc1,osc2);
       return;
     }
     osc1.type='triangle';osc1.frequency.value=freq*0.9992;
@@ -134,6 +144,47 @@
     osc1.start(at);osc2.start(at);
     osc1.stop(at+d+0.06);osc2.stop(at+d+0.06);
     synthNodes.push(osc1,osc2);
+  }
+
+  function maybePingSkeleton(trObj,curT){
+    if(!state.astroPing||!isPlaying())return;
+    const skels=trObj.skeletonNotes||[];
+    for(let i=0;i<skels.length;i++){
+      const sSec=skels[i][5];
+      if(curT>=sSec-0.02&&curT<=sSec+0.14){
+        const key=`${trObj.id}:${i}`;
+        if(lastPingKey!==key){
+          lastPingKey=key;
+          try{
+            const ctx=ensureAudioCtx();
+            schedulePianoNote(ctx,skels[i][2],ctx.currentTime+0.005,0.55,ctx.destination,'ping',trObj.tuningSemitones||0);
+          }catch{}
+        }
+        break;
+      }
+    }
+  }
+
+  /* ---------- Dual-Realm View Switcher ---------- */
+  function setViewMode(mode,{scrollTop=false}={}){
+    state.viewMode=mode==='astrolabe'?'astrolabe':'classic';
+    const isAstro=state.viewMode==='astrolabe';
+    $('classicView').hidden=isAstro;
+    $('astrolabeView').hidden=!isAstro;
+    $('tabClassic').classList.toggle('selected',!isAstro);
+    $('tabClassic').setAttribute('aria-selected',String(!isAstro));
+    $('tabAstrolabe').classList.toggle('selected',isAstro);
+    $('tabAstrolabe').setAttribute('aria-selected',String(isAstro));
+    $('btnPrimerNav').hidden=isAstro;
+    $('btnMatrixNav').hidden=isAstro;
+    const compass=$('pillarCompassDetails');
+    if(compass)compass.open=!isAstro&&window.innerWidth>640;
+    try{history.replaceState(null,'',isAstro?'#astrolabe':location.pathname+location.search);}catch{}
+    store();
+    lastAstroLiveKey='';
+    renderAstrolabeStatic();
+    renderVisualFrame();
+    if(scrollTop)window.scrollTo({top:0,behavior:'smooth'});
   }
 
   /* ---------- Build 88-Key Virtual Piano ---------- */
@@ -257,6 +308,7 @@
   }
 
   function drawPrimerStaticCanvases(){
+    if(state.viewMode!=='classic')return;
     if(primerMode.canon==='v15')drawMiniRibbon('primerCanonCanvas',15,16,[0,1],true,-1);
     else drawMiniRibbon('primerCanonCanvas',3,24,[0,1],false,-1);
     drawMiniRibbon('primerCrossCanvas',5,24,[0,1],false,-1);
@@ -279,7 +331,6 @@
       const durSec=kind==='bass8'?6.4:7.6;
       const secPerPillar=durSec/8;
 
-      // Always ring the 8 canonical pillars clearly!
       for(let i=0;i<8;i++){
         schedulePianoNote(ctx,PILLAR_MIDI[i],now+i*secPerPillar,secPerPillar*0.92,master,kind==='bass8'?'voice':'ghost');
       }
@@ -340,6 +391,67 @@
       };
       synthAnim=requestAnimationFrame(anim);
     }
+  }
+
+  /* ---------- 4-Second Major vs. Minor Mode Ear Opener (Astrolabe) ---------- */
+  function playModeComparison(mode){
+    pauseAudio();
+    stopSynth();
+    const ctx=ensureAudioCtx();
+    const master=ctx.createGain();master.gain.value=0.88;master.connect(ctx.destination);
+    const now=ctx.currentTime+0.04;
+    const isMinor=(mode==='minor');
+    // Same 8-pillar Goldberg harmonic progression in radiant G Major vs. Lunar Eclipse G Minor (B->Bb, E->Eb)!
+    const chordsMajor=[
+      [55,62,71,79], [54,62,69,78], [52,59,67,76], [50,57,66,74],
+      [47,55,62,71], [48,55,64,72], [50,57,66,74], [43,55,62,67]
+    ];
+    const chordsMinor=[
+      [55,62,70,79], [54,62,69,78], [51,58,67,75], [50,57,66,74],
+      [46,55,62,70], [48,55,63,72], [50,57,66,74], [43,55,62,67]
+    ];
+    const seq=isMinor?chordsMinor:chordsMajor;
+    const step=0.52;
+    synthState.active=true;synthState.mode='mode:'+mode;
+    $('astroStageCard')?.classList.toggle('minor-eclipse',isMinor);
+    seq.forEach((ch,i)=>{
+      const t0=now+i*step;
+      schedulePianoNote(ctx,ch[0],t0,step*0.95,master,'ghost');
+      for(let k=1;k<ch.length;k++)schedulePianoNote(ctx,ch[k],t0+k*0.018,step*0.9,master,'voice');
+    });
+    toast(isMinor?t('🌑 G小调月蚀版：仅把第3、6音压低半音（B→Bb, E→Eb），阳光瞬间化作悲叹！','🌑 G Minor Eclipse: lowering the 3rd & 6th (B→Bb, E→Eb) turns sunlight into poignant shadow!'):t('☀️ G大调原貌：明亮的大三度（B♮）与大六度（E♮），温暖开阔！','☀️ G Major Original: bright major 3rd (B♮) and 6th (E♮) radiate warmth!'));
+    synthTimer=setTimeout(()=>{
+      stopSynth();
+      $('astroStageCard')?.classList.toggle('minor-eclipse',track().keyMode==='G minor');
+    },seq.length*step*1000+160);
+  }
+
+  /* ---------- Pure 2-Voice Canon Slow Isolation Demo (Astrolabe Mystery 2) ---------- */
+  function playAstroCanonPair(){
+    pauseAudio();
+    stopSynth();
+    const trObj=track();
+    if(trObj.category!=='canon')return;
+    const ctx=ensureAudioCtx();
+    const master=ctx.createGain();master.gain.value=0.9;master.connect(ctx.destination);
+    const now=ctx.currentTime+0.05;
+    const pEnd=trObj.pillars[Math.min(6,trObj.pillars.length-1)];
+    const qEnd=Math.max(8,pEnd?pEnd.q:16);
+    const durSec=7.2, secPerQ=durSec/qEnd;
+    synthState={active:true,mode:'astroCanon',startAt:now,q0:0,q1:qEnd,secPerQ,durSec,trackIdx:trObj.id};
+    for(const [st,du,mi,vi] of trObj.notes){
+      if(st>=qEnd-0.02)break;
+      if(vi<=1)schedulePianoNote(ctx,mi,now+st*secPerQ,Math.min(du,qEnd-st)*secPerQ,master,'voice');
+    }
+    toast(t('👂 已剥离低音伴奏，单独慢放卡农双声部追逐！看星盘内圈青金双线连弧！','👂 Bass stripped! Playing pure 2-voice Canon chase—watch the cyan-gold echo arcs!'));
+    const anim=()=>{
+      if(!synthState.active||synthState.mode!=='astroCanon')return;
+      const elap=ctx.currentTime-now;
+      if(elap>=durSec+0.1){stopSynth();return;}
+      renderVisualFrame(elap/secPerQ);
+      synthAnim=requestAnimationFrame(anim);
+    };
+    synthAnim=requestAnimationFrame(anim);
   }
 
   /* ---------- Voice Dissection Synth Mode ---------- */
@@ -403,15 +515,33 @@
 
   function updateLabButtons(){
     const btn=$('synthPlayBtn');
-    if(synthState.active&&synthState.mode==='lab'){
-      btn.textContent=t('⏹ 停止拆解试听','⏹ Stop Voice Synth');
-    }else{
-      btn.textContent=t('🎹 拆解合成试听本段','🎹 Synth-Isolate Voices');
+    if(btn){
+      btn.textContent=(synthState.active&&synthState.mode==='lab')?t('⏹ 停止拆解试听','⏹ Stop Voice Synth'):t('🎹 拆解合成试听本段','🎹 Synth-Isolate Voices');
     }
     const gb=$('ghostBassBtn');
-    gb.classList.toggle('active',state.ghostBass);
-    gb.setAttribute('aria-pressed',String(state.ghostBass));
-    gb.textContent=state.ghostBass?t('🔔 黄金地基钟声：已叠加','🔔 Ghost Bass: ON'):t('🔔 叠加黄金地基钟声','🔔 Overlay Ghost Bass');
+    if(gb){
+      gb.classList.toggle('active',state.ghostBass);
+      gb.setAttribute('aria-pressed',String(state.ghostBass));
+      gb.textContent=state.ghostBass?t('🔔 黄金地基钟声：已叠加','🔔 Ghost Bass: ON'):t('🔔 叠加黄金地基钟声','🔔 Overlay Ghost Bass');
+    }
+    const sp=$('astroSpotlightBtn');
+    if(sp){
+      sp.classList.toggle('active',state.astroSpotlight);
+      sp.setAttribute('aria-pressed',String(state.astroSpotlight));
+      sp.textContent=state.astroSpotlight?t('🔍 激光圈出变形骨架音：开','🔍 Skeleton Laser: ON'):t('🔍 激光圈出变形骨架音：关','🔍 Skeleton Laser: OFF');
+    }
+    const pg=$('astroPingBtn');
+    if(pg){
+      pg.classList.toggle('active',state.astroPing);
+      pg.setAttribute('aria-pressed',String(state.astroPing));
+      pg.textContent=state.astroPing?t('🔔 同步轻敲隐藏骨架音：开','🔔 Chime Hidden Theme: ON'):t('🔔 同步轻敲隐藏骨架音：关','🔔 Chime Hidden Theme: OFF');
+    }
+    const ca=$('astroCanonArcBtn');
+    if(ca){
+      ca.classList.toggle('active',state.astroCanonArc);
+      ca.setAttribute('aria-pressed',String(state.astroCanonArc));
+      ca.textContent=state.astroCanonArc?t('⏳ 卡农追逐连线：开','⏳ Canon Echo Arcs: ON'):t('⏳ 卡农追逐连线：关','⏳ Canon Echo Arcs: OFF');
+    }
   }
 
   /* ---------- Audio Controls ---------- */
@@ -439,6 +569,7 @@
 
   function seek(sec,autoplay=false){
     stopSynth();
+    lastPingKey='';
     const target=E.clamp(sec,0,Math.max(0,(track().duration||0)-0.05));
     applyAudioTime(target);
     state.positions[track().id]=target;
@@ -472,6 +603,8 @@
     pendingAutoplay=autoplay;
     lastPillarKey='';
     lastStageIdx=-1;
+    lastAstroLiveKey='';
+    lastPingKey='';
 
     audio.pause();
     audio.src=nextTr.audio;
@@ -490,13 +623,13 @@
 
     store();
     renderChapterAll();
-    if(scroll)$('chapterHero').scrollIntoView({behavior:'smooth',block:'start'});
+    if(scroll&&state.viewMode==='classic')$('chapterHero').scrollIntoView({behavior:'smooth',block:'start'});
     if(preservePillar&&state.pillarLock&&time===null&&prevT>prevTr.musicStartSec+0.4){
       toast(t(`已对齐至 ${nextTr.code} · 第 ${prevP.pillar} 根地基立柱`, `Synced to ${nextTr.code_en||nextTr.code} · Pillar #${prevP.pillar}`));
     }
   }
 
-  /* ---------- Render Chapter UI ---------- */
+  /* ---------- Render Classic + Astrolabe Static Chapter Panels ---------- */
   function passLabel(passCode,topo){
     if(topo==='AB')return passCode==='A1'?t('前半部 A（无反复）','Part A (No Repeat)'):t('后半部 B（无反复）','Part B (No Repeat)');
     const map={
@@ -655,13 +788,429 @@
     host.innerHTML=html;
   }
 
+  /* ---------- Render Astrolabe Three-Mystery Decoder ---------- */
+  function renderAstrolabeStatic(){
+    const trObj=track(), ag=trObj.astro||{};
+    const isMinor=trObj.keyMode==='G minor';
+    $('astroStageCard').classList.toggle('minor-eclipse',isMinor);
+    $('astroEyebrow').textContent=t('BAROQUE ROSE ASTROLABE · 衔尾蛇环形星盘剧场','BAROQUE ROSE ASTROLABE · SACRED CLOCKWORK');
+    $('astroStageTitle').textContent=`${tr(trObj,'code')} · ${tr(trObj,'title')}`;
+
+    const cb=$('astroClimateBadge');
+    cb.className=`climate-badge ${isMinor?'minor':'major'}`;
+    cb.textContent=isMinor?t('🌑 G小调月蚀 · 第3/6音压暗','🌑 G Minor Eclipse · Lowered 3rd/6th'):t('☀️ G大调日晷 · 明朗金穹','☀️ G Major Sundial · Warm Gold');
+
+    $('astroCanvasHint').textContent=t(
+      '外圈 32 颗星辰＝全曲 32 章（点击切曲）· 中圈 16 格彩窗＝当前半场和声立柱（点击跳听）· 金色菱形 ◆＝藏在音符海里的变形骨架音',
+      'Outer 32 Stars = 32 Chapters (click to switch) · Middle 16 Stained-Glass Wedges = Active Half Pillars (click to seek) · Gold ◆ = Disguised Theme Notes'
+    );
+    $('astroMajorDemoBtn').textContent=t('🌞 听大调原貌 (4s)','🌞 Hear G Major (4s)');
+    $('astroMinorDemoBtn').textContent=t('🌑 听变小调黑化 (4s)','🌑 Hear G Minor (4s)');
+
+    // Mystery 1: Disguised Theme
+    const stars='★'.repeat(ag.disguiseStars||1)+'☆'.repeat(5-(ag.disguiseStars||1));
+    $('mys1Title').textContent=t('🎯 盲区一：被揉搓变形后的主题藏在哪？','🎯 Mystery 1: Where Is the Disguised Theme?');
+    $('disguiseBadge').textContent=`${t('隐身度','Disguise')} ${stars} · ${tr(ag,'disguiseType')}`;
+    $('mys1Body').textContent=tr(ag,'whereIsTheme');
+
+    // Mystery 2: Canon & Counterpoint
+    $('mys2Title').textContent=t('🪞 盲区二：卡农追逐与声部机关怎么听？','🪞 Mystery 2: Canon & Counterpoint Mechanics');
+    if(trObj.category==='canon'){
+      const lag=Math.abs(ag.canonDelayQ||2);
+      const dir=trObj.canonInverted?t('上下倒影镜像','Upside-Down Mirror'):t('同方向照抄','Same-Direction Copy');
+      $('canonFormulaBadge').textContent=t(`间隔 ${lag} 拍 · ${trObj.canonInterval}度 · ${dir}`,`Lag ${lag}q · Interval ${trObj.canonInterval}° · ${dir}`);
+      $('mys2Actions').innerHTML=`<button id="btnAstroCanonIso" class="gold-soft">${t('👂 剥离低音 · 单独慢听双声部追逐 (7s)','👂 Solo 2-Voice Canon Chase (7s)')}</button>
+        <button data-astro-jump="3">${t('对比1度同向 (Var.3)','Compare Unison (Var.3)')}</button>
+        <button data-astro-jump="15">${t('对比5度倒影 (Var.15)','Compare Mirror (Var.15)')}</button>
+        <button data-astro-jump="27">${t('对比无低音9度 (Var.27)','Compare Bass-less (Var.27)')}</button>`;
+    }else{
+      $('canonFormulaBadge').textContent=trObj.voiceCrossings>0?t(`非卡农 · 声部交叉 ${trObj.voiceCrossings} 次`,`Free Counterpoint · ${trObj.voiceCrossings} Crossings`):t(`非卡农 · ${trObj.voiceCount} 声部织体`,`${trObj.voiceCount}-Voice Texture`);
+      $('mys2Actions').innerHTML=`<button data-astro-jump="3" class="gold-soft">${t('🏃 去听最直观的同度卡农 (Var.3)','🏃 Hear Clear Unison Canon (Var.3)')}</button>
+        <button data-astro-jump="12">${t('🪞 去听4度倒影卡农 (Var.12)','🪞 Hear Inverted Canon (Var.12)')}</button>
+        <button data-astro-jump="15">${t('🌑 去听5度小调镜像 (Var.15)','🌑 Hear G-Minor Mirror (Var.15)')}</button>`;
+    }
+    $('mys2Body').textContent=tr(ag,'canonRule');
+
+    // Mystery 3: Key Change & 4 Harmonic Quadrants
+    $('mys3Title').textContent=t('🎨 盲区三：变调与四季冷暖怎么感知？','🎨 Mystery 3: Key Changes & Harmonic Climate');
+    const mk=$('macroKeyBadge');
+    mk.className=`key-badge ${isMinor?'minor':''}`;
+    mk.textContent=isMinor?t('🌑 全章小调（B→Bb, E→Eb）','🌑 Minor Mode (B→Bb, E→Eb)'):t('☀️ 全章大调（内含4象限微转调）','☀️ Major Mode (4 Internal Climates)');
+    $('mys3Body').textContent=tr(ag,'modSecret');
+
+    const quads=D.harmonicQuadrants||[];
+    $('quadrantStepper').innerHTML=quads.map(q=>`<button class="quad-step ${q.id===3||isMinor?'q-minor':''}" id="qstep-${q.id}" data-pillar-jump="${q.pillars[0]}">
+      <span>${q.icon} <b>${esc(t(`第 ${q.pillars[0]}–${q.pillars[1]} 柱`,`Pillars ${q.pillars[0]}–${q.pillars[1]}`))}</b></span>
+      <small>${esc(tr(q,'tonality'))}</small>
+    </button>`).join('');
+
+    updateLabButtons();
+    updateAstroLiveDecoder();
+  }
+
+  function updateAstroLiveDecoder(){
+    if(state.viewMode!=='astrolabe')return;
+    const trObj=track(), curT=currentAudioTime();
+    const pObj=E.activePillarAt(trObj,curT);
+    const liveKey=`${trObj.id}:${pObj.index}:${state.lang}`;
+    if(liveKey===lastAstroLiveKey)return;
+    lastAstroLiveKey=liveKey;
+
+    // 1. Update Live 3-Slot Skeleton Tracker
+    const skels=trObj.skeletonNotes||[];
+    const idx=E.clamp(pObj.index,0,Math.max(0,skels.length-1));
+    const renderSlot=(sIdx,roleLabel,isCenter)=>{
+      if(sIdx<0||sIdx>=skels.length)return `<div class="skel-slot"><span>${esc(roleLabel)}</span><b>—</b></div>`;
+      const sk=skels[sIdx];
+      const vName=tr(trObj.voicesMeta?.[sk[3]],'name')||`Voice ${sk[3]+1}`;
+      const pNum=sk[4], noteStr=E.midiName(sk[2]);
+      const gp=D.groundPillars[pNum-1];
+      return `<div class="skel-slot ${isCenter?'active-skel':''}">
+        <span>${esc(roleLabel)} · #${pNum} (${esc(gp?gp[1]:'')})</span>
+        <b>${isCenter?'◆ ':''}${esc(noteStr)}</b>
+        <small>${esc(vName)}</small>
+      </div>`;
+    };
+    $('liveSkeletonTracker').innerHTML=
+      renderSlot(idx-1,t('上一柱','Prev'),false)+
+      renderSlot(idx,t('当前变形骨架真身','Active Hidden Pillar'),true)+
+      renderSlot(idx+1,t('下一柱','Next'),false);
+
+    // 2. Highlight Active Quadrant (1..4) & Live Climate Explanation
+    const qId=Math.min(4,Math.max(1,Math.ceil(pObj.pillar/8)));
+    for(let i=1;i<=4;i++)$(`qstep-${i}`)?.classList.toggle('active',i===qId);
+    const qObj=(D.harmonicQuadrants||[])[qId-1];
+    if(qObj){
+      $('quadrantLiveBox').innerHTML=`<b>${qObj.icon} ${esc(tr(qObj,'name'))}：</b>${esc(tr(qObj,'feel'))}`;
+    }
+  }
+
+  /* ---------- 60-fps Sacred Circular Baroque Astrolabe Canvas ---------- */
+  function drawAstrolabe(overrideQ=null){
+    const c=$('astrolabeCanvas');
+    if(!c||state.viewMode!=='astrolabe')return;
+    const dpr=window.devicePixelRatio||1;
+    const size=Math.max(280,c.clientWidth||520);
+    if(c.width!==Math.round(size*dpr)||c.height!==Math.round(size*dpr)){
+      c.width=Math.round(size*dpr);
+      c.height=Math.round(size*dpr);
+    }
+    const ctx=c.getContext('2d');
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,size,size);
+
+    const cx=size/2, cy=size/2, R=size*0.485;
+    const trObj=track();
+    const curT=currentAudioTime();
+    const phase=overrideQ!==null?'active':E.silencePhase(curT,trObj);
+    const curQ=overrideQ!==null?overrideQ:E.secToQ(trObj,curT);
+    const pObj=E.activePillarAt(trObj,overrideQ!==null?E.qToSec(trObj,overrideQ):curT);
+    const isMinor=(trObj.keyMode==='G minor')||(synthState.mode==='mode:minor');
+    const inMinorForest=(!isMinor&&pObj.pillar>=17&&pObj.pillar<=24);
+    const cols=voiceColors(trObj);
+
+    // Background celestial disc
+    const bgGrad=ctx.createRadialGradient(cx,cy,R*0.08,cx,cy,R);
+    if(isMinor){
+      bgGrad.addColorStop(0,'#171332');
+      bgGrad.addColorStop(0.62,'#0f1429');
+      bgGrad.addColorStop(1,'#090d18');
+    }else if(inMinorForest){
+      bgGrad.addColorStop(0,'#13222b');
+      bgGrad.addColorStop(0.62,'#101829');
+      bgGrad.addColorStop(1,'#090d16');
+    }else{
+      bgGrad.addColorStop(0,'#241c11');
+      bgGrad.addColorStop(0.62,'#121828');
+      bgGrad.addColorStop(1,'#090d16');
+    }
+    ctx.fillStyle=bgGrad;
+    ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);ctx.fill();
+
+    // Subtle concentric brass astrolabe rings
+    for(const frac of [0.96,0.84,0.68,0.255]){
+      ctx.strokeStyle=isMinor?'rgba(192,132,252,0.22)':'rgba(245,158,11,0.22)';
+      ctx.lineWidth=1;
+      ctx.beginPath();ctx.arc(cx,cy,R*frac,0,Math.PI*2);ctx.stroke();
+    }
+    // Vertical symmetry axis (Aria 0 <-> Var 16 Ouverture)
+    ctx.strokeStyle='rgba(245,158,11,0.14)';
+    ctx.setLineDash([3,5]);
+    ctx.beginPath();ctx.moveTo(cx,cy-R*0.95);ctx.lineTo(cx,cy+R*0.95);ctx.stroke();
+    ctx.setLineDash([]);
+
+    /* --- RING 1: Outer 32-Star Constellation Zodiac --- */
+    astroHitStars=[];
+    const rStar=R*0.905;
+    for(let i=0;i<32;i++){
+      const item=D.tracks[i];
+      const ang=-Math.PI/2+(i/32)*Math.PI*2;
+      const sx=cx+Math.cos(ang)*rStar, sy=cy+Math.sin(ang)*rStar;
+      let col='#34d399';
+      if(item.category==='portal')col='#fbbf24';
+      else if(item.keyMode==='G minor')col='#c084fc';
+      else if(item.category==='canon')col='#38bdf8';
+      else if(item.category==='virtuoso')col='#fb7185';
+      else if(item.category==='quodlibet')col='#fde047';
+
+      const isCur=(i===state.index);
+      if(isCur){
+        ctx.strokeStyle='#fde68a';ctx.lineWidth=2;
+        ctx.beginPath();ctx.arc(sx,sy,size<400?7.5:9.5,0,Math.PI*2);ctx.stroke();
+      }
+      ctx.fillStyle=col;
+      ctx.globalAlpha=isCur?1:0.78;
+      ctx.beginPath();ctx.arc(sx,sy,isCur?(size<400?4.8:6):(size<400?3.1:4),0,Math.PI*2);ctx.fill();
+
+      if(i%3===0||i===16||i===31||isCur){
+        ctx.globalAlpha=isCur?1:0.62;
+        ctx.fillStyle=isCur?'#fde68a':col;
+        ctx.font=`${isCur?'700':'600'} ${size<400?8.5:9.5}px ui-monospace, monospace`;
+        ctx.textAlign='center';ctx.textBaseline='middle';
+        const lbl=i===0?'A':(i===31?'DC':String(i));
+        const rTxt=R*0.968;
+        ctx.fillText(lbl,cx+Math.cos(ang)*rTxt,cy+Math.sin(ang)*rTxt);
+      }
+      astroHitStars.push({id:i,x:sx,y:sy,r:12});
+    }
+    ctx.globalAlpha=1;
+
+    /* --- RING 2: 16-Sector Stained-Glass Harmonic Dial (Active Half A or B) --- */
+    const curPass=pObj.pass||'A1';
+    const isPartB=curPass.startsWith('B');
+    const basePillar=isPartB?17:1;
+    const rIn=R*0.695, rOut=R*0.825;
+    astroHitWedges=[];
+
+    for(let k=0;k<16;k++){
+      const pNum=basePillar+k;
+      const gp=D.groundPillars[pNum-1];
+      const a0=-Math.PI/2+(k/16)*Math.PI*2+0.012;
+      const a1=-Math.PI/2+((k+1)/16)*Math.PI*2-0.012;
+      const isAct=(phase==='active'&&pObj.pillar===pNum);
+
+      let fillCol='rgba(245,158,11,0.13)';
+      if(isMinor)fillCol=k<8?'rgba(139,92,246,0.20)':'rgba(56,189,248,0.17)';
+      else if(!isPartB)fillCol=k<8?'rgba(245,158,11,0.16)':'rgba(251,191,36,0.22)';
+      else fillCol=k<8?'rgba(168,85,247,0.22)':'rgba(52,211,153,0.18)';
+
+      if(isAct)fillCol=isMinor?'rgba(192,132,252,0.88)':'rgba(245,158,11,0.92)';
+
+      ctx.beginPath();
+      ctx.arc(cx,cy,rOut,a0,a1);
+      ctx.arc(cx,cy,rIn,a1,a0,true);
+      ctx.closePath();
+      ctx.fillStyle=fillCol;
+      ctx.fill();
+      ctx.strokeStyle=isAct?'#fff':(pNum===14?'rgba(56,189,248,0.7)':'rgba(148,163,184,0.24)');
+      ctx.lineWidth=isAct?1.8:1;
+      ctx.stroke();
+
+      const amid=(a0+a1)/2, rMid=(rIn+rOut)/2;
+      const tx=cx+Math.cos(amid)*rMid, ty=cy+Math.sin(amid)*rMid;
+      ctx.fillStyle=isAct?'#090d16':'#e2e8f0';
+      ctx.font=`700 ${size<420?8.5:10}px ui-monospace, monospace`;
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(gp[1],tx,ty-(size<420?3:4));
+      ctx.fillStyle=isAct?'#1e293b':'#94a3b8';
+      ctx.font=`600 ${size<420?7.5:8.5}px ui-monospace, monospace`;
+      ctx.fillText(`#${pNum}`,tx,ty+(size<420?5:6));
+
+      astroHitWedges.push({pillar:pNum,a0,a1,rIn,rOut});
+    }
+
+    /* --- RING 3: Inner Sacred-Geometry Multi-Voice Orbit & X-Ray Arena --- */
+    const passPillars=trObj.pillars.filter(p=>p.pass===curPass);
+    const qHalf0=passPillars.length?passPillars[0].q:0;
+    const lastPP=passPillars[passPillars.length-1];
+    const nextPPIdx=lastPP?trObj.pillars.findIndex(p=>p.seq===lastPP.seq)+1:trObj.pillars.length;
+    const qHalf1=nextPPIdx<trObj.pillars.length?trObj.pillars[nextPPIdx].q:trObj.totalQ;
+    const qSpan=Math.max(1,qHalf1-qHalf0);
+
+    let minP=36, maxP=86;
+    if(trObj.notes.length){
+      if(!trObj._pitchBounds){
+        let lo=108,hi=21;
+        for(const n of trObj.notes){if(n[2]<lo)lo=n[2];if(n[2]>hi)hi=n[2];}
+        trObj._pitchBounds=[Math.max(21,lo-3),Math.min(108,hi+3)];
+      }
+      [minP,maxP]=trObj._pitchBounds;
+    }
+    const rMin=R*0.275, rMax=R*0.655;
+    const pitchToR=m=>rMin+((m-minP)/Math.max(1,maxP-minP))*(rMax-rMin);
+    const qToAng=q=>-Math.PI/2+((q-qHalf0)/qSpan)*Math.PI*2;
+
+    // Optional Mirror Horizon Circle on Inverted Canons (Var. 12 & Var. 15)
+    if(trObj.canonInverted){
+      const rMir=(rMin+rMax)*0.51;
+      ctx.strokeStyle='rgba(251,191,36,0.55)';
+      ctx.lineWidth=1.3;ctx.setLineDash([5,4]);
+      ctx.beginPath();ctx.arc(cx,cy,rMir,0,Math.PI*2);ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Filter notes in current 16-pillar half
+    const passNotes=[];
+    for(const n of trObj.notes){
+      if(n[0]+n[1]<qHalf0)continue;
+      if(n[0]>=qHalf1)break;
+      if(!state.muted[`${trObj.id}:${n[3]}`])passNotes.push(n);
+    }
+
+    // Draw note polar arcs
+    const activeHeads=[];
+    for(const n of passNotes){
+      const [st,du,mi,vi]=n;
+      const aStart=qToAng(Math.max(qHalf0,st));
+      const aEnd=Math.max(aStart+0.018,qToAng(Math.min(qHalf1,st+du)));
+      const nr=pitchToR(mi);
+      const passed=(curQ>=st);
+      const sounding=(phase==='active'&&curQ>=st-0.02&&curQ<=st+du+0.02);
+      ctx.strokeStyle=cols[vi]||'#f59e0b';
+      ctx.lineWidth=sounding?5.2:(state.astroSpotlight?2.1:3.0);
+      ctx.globalAlpha=sounding?1:(passed?(state.astroSpotlight?0.42:0.68):0.18);
+      ctx.beginPath();ctx.arc(cx,cy,nr,aStart,aEnd);ctx.stroke();
+      if(sounding)activeHeads.push({r:nr,ang:qToAng(E.clamp(curQ,st,st+du)),col:cols[vi]||'#f59e0b',midi:mi,vi});
+    }
+    ctx.globalAlpha=1;
+
+    // Canon Time-Lag Echo Arcs (Dux ──↷──▶ Comes)
+    const delayQ=trObj.astro?.canonDelayQ;
+    if(state.astroCanonArc&&trObj.category==='canon'&&delayQ){
+      const leaderVi=delayQ>0?0:1, followerVi=delayQ>0?1:0, lag=Math.abs(delayQ);
+      const recentFollowers=passNotes.filter(n=>n[3]===followerVi&&n[0]<=curQ+0.05&&n[0]>=curQ-lag*1.35);
+      const leaderPool=passNotes.filter(n=>n[3]===leaderVi);
+      for(const fn of recentFollowers.slice(-8)){
+        const targetQ=fn[0]-lag;
+        let bestL=null, bestDiff=0.45;
+        for(const ln of leaderPool){
+          const d=Math.abs(ln[0]-targetQ);
+          if(d<bestDiff){bestDiff=d;bestL=ln;}
+        }
+        if(bestL){
+          const a1=qToAng(bestL[0]), r1=pitchToR(bestL[2]);
+          const a2=qToAng(fn[0]), r2=pitchToR(fn[2]);
+          const x1=cx+Math.cos(a1)*r1, y1=cy+Math.sin(a1)*r1;
+          const x2=cx+Math.cos(a2)*r2, y2=cy+Math.sin(a2)*r2;
+          const isNow=(curQ>=fn[0]-0.05&&curQ<=fn[0]+fn[1]+0.15);
+          ctx.strokeStyle=isNow?'rgba(56,189,248,0.88)':'rgba(56,189,248,0.28)';
+          ctx.lineWidth=isNow?2.1:1.1;
+          ctx.beginPath();
+          ctx.moveTo(x1,y1);
+          ctx.quadraticCurveTo(cx,cy,x2,y2);
+          ctx.stroke();
+        }
+      }
+    }
+
+    // Golden Diamond Skeleton Spotlight (◆ Disguised Theme Nodes + Laser Spoke!)
+    if(state.astroSpotlight){
+      const skels=(trObj.skeletonNotes||[]).filter(sk=>sk[0]>=qHalf0-0.08&&sk[0]<qHalf1);
+      for(const sk of skels){
+        const [st,,mi,,pNum]=sk;
+        const sa=qToAng(E.clamp(st,qHalf0,qHalf1)), sr=pitchToR(mi);
+        const sx=cx+Math.cos(sa)*sr, sy=cy+Math.sin(sa)*sr;
+        const isCurPillar=(phase==='active'&&pNum===pObj.pillar);
+
+        if(isCurPillar){
+          // Shoot radial laser tether from Ring 2 Pillar Wedge straight to the hidden Diamond!
+          const wIdx=pNum-basePillar;
+          const wa=-Math.PI/2+((wIdx+0.5)/16)*Math.PI*2;
+          const wx=cx+Math.cos(wa)*rIn, wy=cy+Math.sin(wa)*rIn;
+          ctx.strokeStyle='#fde047';
+          ctx.lineWidth=2.0;
+          ctx.setLineDash([4,3]);
+          ctx.beginPath();ctx.moveTo(wx,wy);ctx.lineTo(sx,sy);ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Pulsing halo
+          ctx.strokeStyle='rgba(253,224,71,0.75)';
+          ctx.lineWidth=2;
+          ctx.beginPath();ctx.arc(sx,sy,11,0,Math.PI*2);ctx.stroke();
+        }
+
+        const dSize=isCurPillar?6.8:4.0;
+        ctx.fillStyle=isCurPillar?'#fde047':'#f59e0b';
+        ctx.globalAlpha=isCurPillar?1:(curQ>=st?0.85:0.38);
+        ctx.beginPath();
+        ctx.moveTo(sx,sy-dSize);
+        ctx.lineTo(sx+dSize,sy);
+        ctx.lineTo(sx,sy+dSize);
+        ctx.lineTo(sx-dSize,sy);
+        ctx.closePath();
+        ctx.fill();
+
+        if(isCurPillar){
+          ctx.globalAlpha=1;
+          ctx.fillStyle='#fde047';
+          ctx.font='700 10.5px ui-monospace, monospace';
+          ctx.textAlign='center';
+          ctx.fillText(`◆ ${E.midiName(mi)}`,sx,sy-13);
+        }
+      }
+      ctx.globalAlpha=1;
+    }
+
+    // Active Orbiting Comet Heads
+    for(const h of activeHeads){
+      const hx=cx+Math.cos(h.ang)*h.r, hy=cy+Math.sin(h.ang)*h.r;
+      ctx.fillStyle=h.col;
+      ctx.shadowColor=h.col;ctx.shadowBlur=12;
+      ctx.beginPath();ctx.arc(hx,hy,5.5,0,Math.PI*2);ctx.fill();
+      ctx.shadowBlur=0;
+    }
+
+    // Sweeping Astrolabe Hand
+    if(phase==='active'){
+      const handAng=qToAng(E.clamp(curQ,qHalf0,qHalf1));
+      ctx.strokeStyle='rgba(253,230,138,0.65)';
+      ctx.lineWidth=1.5;
+      ctx.beginPath();
+      ctx.moveTo(cx+Math.cos(handAng)*R*0.25,cy+Math.sin(handAng)*R*0.25);
+      ctx.lineTo(cx+Math.cos(handAng)*rIn,cy+Math.sin(handAng)*rIn);
+      ctx.stroke();
+    }
+
+    /* --- CENTER ROSE MEDALLION --- */
+    const rMed=R*0.245;
+    ctx.fillStyle=isMinor?'#131129':'#101625';
+    ctx.beginPath();ctx.arc(cx,cy,rMed,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle=isMinor?'#c084fc':'#f59e0b';
+    ctx.lineWidth=1.8;ctx.stroke();
+
+    const gpCur=D.groundPillars[pObj.pillar-1]||D.groundPillars[0];
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillStyle=isMinor?'#e9d5ff':'#fde68a';
+    ctx.font=`800 ${size<420?12:14.5}px ui-monospace, monospace`;
+    ctx.fillText(tr(trObj,'code'),cx,cy-rMed*0.42);
+
+    ctx.fillStyle='#f8fafc';
+    ctx.font=`700 ${size<420?11:13}px ui-monospace, monospace`;
+    ctx.fillText(`${curPass} · #${pObj.pillar} ${gpCur[1]}`,cx,cy+2);
+
+    const qId=Math.min(4,Math.max(1,Math.ceil(pObj.pillar/8)));
+    const qShort=[
+      t('🏠 故乡主调','🏠 Tonic Home'),
+      t('🌤️ 转向属调D','🌤️ To Dom. D'),
+      t('🌲 小调幽林','🌲 Minor Woods'),
+      t('🌅 破云归航','🌅 Homecoming')
+    ][qId-1];
+    ctx.fillStyle=isMinor?'#c084fc':'#38bdf8';
+    ctx.font=`600 ${size<420?8.5:10}px ui-sans-serif, system-ui, sans-serif`;
+    ctx.fillText(isMinor?t('🌑 G小调月蚀','🌑 G Minor'):qShort,cx,cy+rMed*0.44);
+  }
+
   function updateStaticLabels(){
     document.documentElement.lang=state.lang==='en'?'en':'zh-CN';
     document.documentElement.dataset.theme=state.theme;
     $('skipLink').textContent=t('跳到主内容','Skip to content');
     $('consoleTitle').textContent=tr(M,'title')||t('巴赫《哥德堡变奏曲》零基础互动建筑馆','J.S. Bach · Goldberg Variations Interactive Architecture Lab');
     $('recBadge').textContent=tr(M,'recordingLabel')||'Yunchan Lim · Live at Carnegie Hall (2025)';
-    $('consoleSub').textContent=t(' · 32根承重地基 · 九重卡农阶梯 · 88键声部透视',' · 32 Pillars · 9 Canons · 88-Key Voice X-Ray');
+    $('consoleSub').textContent=t(' · 32根承重地基 · 九重卡农阶梯 · 巴洛克环形星盘',' · 32 Pillars · 9 Canons · Baroque Astrolabe');
+
+    $('tabClassic').innerHTML=t('🏛️ 经典建筑解剖台','🏛️ Classic Lab');
+    $('tabAstrolabe').innerHTML=`${t('🪐 巴洛克环形星盘剧场','🪐 Baroque Astrolabe')} <span class="new-pill">NEW</span>`;
+
     $('btnPrimerNav').textContent=t('🎓 零基础三步懂变奏','🎓 3-Step Intro');
     $('btnMatrixNav').textContent=t('🗺️ 32章建筑图','🗺️ 32-Chapter Map');
     $('btnThreads').textContent=t('暗线','Threads');
@@ -693,6 +1242,7 @@
     $('footThreads').textContent=t('六条建筑暗线','6 Architectural Threads');
     $('footGlossary').textContent=t('零基础术语词典','Beginner Glossary');
     $('footSources').textContent=t('音源与开源乐谱声明','Audio & Score Sources');
+    updateLabButtons();
     updateTransportUI();
   }
 
@@ -704,13 +1254,15 @@
     $('play').textContent=wantsPlayback()?t('Ⅱ 暂停原声','Ⅱ Pause'):t('▶ 播放卡内基原声','▶ Play Lim Live');
   }
 
-  /* ---------- Live Telemetry, Waveform, Ribbon & 88-Key Frame ---------- */
+  /* ---------- Live Telemetry, Waveform, Ribbon, 88-Key & Astrolabe ---------- */
   function renderTelemetry(){
     const trObj=track(), curT=currentAudioTime();
     const phase=E.silencePhase(curT,trObj);
     const pObj=E.activePillarAt(trObj,curT);
     const sIdx=E.activeStageAt(trObj.stages,curT);
     const stg=trObj.stages[sIdx]||trObj.stages[0];
+
+    maybePingSkeleton(trObj,curT);
 
     $('liveTrackBadge').textContent=tr(trObj,'code');
     $('livePassBadge').textContent=passLabel(pObj.pass,trObj.repeatTopology);
@@ -746,6 +1298,8 @@
       if(bar)bar.style.setProperty('--prog',`${pct.toFixed(1)}%`);
     });
 
+    if(state.viewMode==='astrolabe')updateAstroLiveDecoder();
+
     if(state.loopStage&&isPlaying()&&stg){
       const endS=trObj.stages[sIdx+1]?.start??trObj.musicEndSec;
       if(curT>=endS-0.06)applyAudioTime(stg.start);
@@ -780,13 +1334,17 @@
   }
 
   function renderVisualFrame(overrideQ=null){
+    if(state.viewMode==='astrolabe'){
+      drawAstrolabe(overrideQ);
+      return;
+    }
+
     const trObj=track();
     const curT=currentAudioTime();
     const phase=overrideQ!==null?'active':E.silencePhase(curT,trObj);
     const curQ=overrideQ!==null?overrideQ:E.secToQ(trObj,curT);
     const cols=voiceColors(trObj);
 
-    /* 1. Draw Multi-Voice Contrapuntal Ribbon Canvas */
     const c=$('ribbonCanvas');
     if(c){
       const dpr=window.devicePixelRatio||1, w=c.clientWidth||800, h=c.clientHeight||190;
@@ -798,7 +1356,6 @@
       const winBehind=4.5, winAhead=15.5, winSpan=winBehind+winAhead;
       const qLeft=curQ-winBehind, qRight=curQ+winAhead;
 
-      // Pitch range of current movement
       let minP=36, maxP=86;
       if(trObj.notes.length){
         if(!trObj._pitchBounds){
@@ -809,7 +1366,6 @@
         [minP,maxP]=trObj._pitchBounds;
       }
 
-      // Draw vertical Pillar gridlines within [qLeft, qRight]
       ctx.font='600 10px ui-monospace, monospace';
       for(const p of trObj.pillars){
         if(p.q<qLeft-1||p.q>qRight+1)continue;
@@ -822,7 +1378,6 @@
         ctx.fillText(`${p.pass}·P${p.pillar}`,x+3,12);
       }
 
-      // Mirror axis for inverted canons (Var. 12 & Var. 15)
       if(trObj.canonInverted){
         const midY=h*0.46;
         ctx.strokeStyle='rgba(251,191,36,0.5)';
@@ -833,7 +1388,6 @@
         ctx.fillText(t('🪞 镜像对称轴','🪞 Mirror Axis'),w-98,midY-5);
       }
 
-      // Draw notes
       for(const n of trObj.notes){
         const [st,du,mi,vi]=n;
         if(st+du<qLeft)continue;
@@ -851,14 +1405,12 @@
         ctx.fill();
       }
 
-      // Playhead at winBehind / winSpan
       const phX=(winBehind/winSpan)*w;
       ctx.globalAlpha=1;
       ctx.fillStyle='#fde68a';
       ctx.fillRect(phX-1,0,2,h);
     }
 
-    /* 2. Update 88-Key Virtual Piano & Voice-Crossing Detector */
     for(const m of lastLitKeys){
       const el=keyEls.get(m);
       if(el)el.classList.remove('lit');
@@ -896,6 +1448,7 @@
     renderVoiceControls();
     renderStages();
     renderMatrix();
+    renderAstrolabeStatic();
     updateTransportUI();
     renderTelemetry();
     renderVisualFrame();
@@ -924,12 +1477,67 @@
       (D.sources||[]).map(s=>`<div class="modal-item"><h3>${esc(tr(s,'title'))}</h3><p>${esc(tr(s,'note'))}</p>${s.url?`<p><a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.url)} ↗</a></p>`:''}</div>`).join(''));
   }
 
-  /* ---------- Event Delegation & Listeners ---------- */
+  /* ---------- Astrolabe Canvas Pointer Interaction ---------- */
+  function hitTestAstrolabe(ev){
+    const c=$('astrolabeCanvas');
+    const r=c.getBoundingClientRect();
+    const x=ev.clientX-r.left, y=ev.clientY-r.top;
+    const cx=r.width/2, cy=r.height/2;
+
+    for(const st of astroHitStars){
+      if(Math.hypot(x-st.x,y-st.y)<=st.r){
+        return {kind:'star',id:st.id,x,y,w:r.width};
+      }
+    }
+    const dist=Math.hypot(x-cx,y-cy);
+    let ang=Math.atan2(y-cy,x-cx);
+    if(ang<-Math.PI/2)ang+=Math.PI*2;
+    for(const wg of astroHitWedges){
+      if(dist>=wg.rIn&&dist<=wg.rOut&&ang>=wg.a0&&ang<=wg.a1){
+        return {kind:'wedge',pillar:wg.pillar,x,y,w:r.width};
+      }
+    }
+    return null;
+  }
+
+  $('astrolabeCanvas').addEventListener('mousemove',ev=>{
+    const hit=hitTestAstrolabe(ev);
+    const tip=$('astroHoverTip');
+    if(!hit){tip.hidden=true;return;}
+    tip.hidden=false;
+    tip.style.left=`${E.clamp(hit.x+12,6,Math.max(6,hit.w-210))}px`;
+    tip.style.top=`${Math.max(6,hit.y-34)}px`;
+    if(hit.kind==='star'){
+      const it=D.tracks[hit.id];
+      tip.textContent=`[${String(it.id).padStart(2,'0')}] ${tr(it,'code')} · ${tr(it,'title')}`;
+    }else{
+      const gp=D.groundPillars[hit.pillar-1];
+      tip.textContent=t(`点击跳听第 #${hit.pillar} 柱 · 低音 ${gp[1]} (${gp[3]} · ${gp[4]})`,`Seek to Pillar #${hit.pillar} · Bass ${gp[2]} (${gp[3]} · ${gp[4]})`);
+    }
+  });
+  $('astrolabeCanvas').addEventListener('mouseleave',()=>{$('astroHoverTip').hidden=true;});
+  $('astrolabeCanvas').addEventListener('click',ev=>{
+    const hit=hitTestAstrolabe(ev);
+    if(!hit)return;
+    if(hit.kind==='star'){
+      loadTrack(hit.id,{autoplay:true,preservePillar:state.pillarLock});
+    }else if(hit.kind==='wedge'){
+      const pNum=hit.pillar, trObj=track(), curP=E.activePillarAt(trObj,currentAudioTime());
+      const targetPass=pNum<=16?(curP.pass.startsWith('A')?curP.pass:'A1'):(curP.pass.startsWith('B')?curP.pass:'B1');
+      seek(E.resolvePillarTargetSec(trObj,pNum,targetPass),true);
+    }
+  });
+
+  /* ---------- Event Delegation ---------- */
   document.addEventListener('click',ev=>{
     const b=ev.target.closest('button');
     if(!b)return;
     const d=b.dataset;
 
+    if(d.viewMode){
+      setViewMode(d.viewMode);
+      return;
+    }
     if(b.id==='langBtn'){
       state.lang=state.lang==='en'?'zh':'en';
       store();
@@ -937,6 +1545,7 @@
       renderPrimer();
       renderPillarCompass();
       lastPillarKey='';
+      lastAstroLiveKey='';
       renderChapterAll();
       toast(state.lang==='en'?'Switched to English':'已切换为中文');
       return;
@@ -950,6 +1559,7 @@
       return;
     }
     if(b.id==='btnPrimerNav'){
+      setViewMode('classic');
       state.primerOpen=true;store();renderPrimer();
       $('primerSection').scrollIntoView({behavior:'smooth',block:'start'});
       return;
@@ -959,6 +1569,7 @@
       return;
     }
     if(b.id==='btnMatrixNav'){
+      setViewMode('classic');
       $('matrixSection').scrollIntoView({behavior:'smooth',block:'start'});
       return;
     }
@@ -984,6 +1595,26 @@
       updateLabButtons();
       return;
     }
+    if(b.id==='astroSpotlightBtn'){
+      state.astroSpotlight=!state.astroSpotlight;store();updateLabButtons();renderVisualFrame();
+      return;
+    }
+    if(b.id==='astroPingBtn'){
+      state.astroPing=!state.astroPing;lastPingKey='';store();updateLabButtons();
+      if(state.astroPing){
+        ensureAudioCtx();
+        toast(t('🔔 已开启隐藏骨架提示音：播放原声时每小节骨架音将同步轻响一声水晶铃！','🔔 Skeleton Chime ON: a gentle crystal bell will ping each disguised theme note during playback!'));
+      }
+      return;
+    }
+    if(b.id==='astroCanonArcBtn'){
+      state.astroCanonArc=!state.astroCanonArc;store();updateLabButtons();renderVisualFrame();
+      return;
+    }
+    if(b.id==='astroMajorDemoBtn'){playModeComparison('major');return;}
+    if(b.id==='astroMinorDemoBtn'){playModeComparison('minor');return;}
+    if(b.id==='btnAstroCanonIso'){playAstroCanonPair();return;}
+
     if(b.id==='resetVoicesBtn'){
       const id=track().id;
       for(let vi=0;vi<track().voiceCount;vi++){
@@ -1003,6 +1634,10 @@
     if(d.primerDemo){playPrimerDemo(d.primerDemo);return;}
     if(d.jumpTrack!==undefined){
       loadTrack(+d.jumpTrack,{time:D.tracks[+d.jumpTrack].musicStartSec,autoplay:true,scroll:true});
+      return;
+    }
+    if(d.astroJump!==undefined){
+      loadTrack(+d.astroJump,{autoplay:true,preservePillar:false});
       return;
     }
     if(d.pillarJump!==undefined){
@@ -1135,12 +1770,11 @@
   });
 
   /* ---------- Initialize ---------- */
-  const compass=$('pillarCompassDetails');
-  if(compass)compass.open=window.innerWidth>640;
   $('speedSelect').value=String(state.speed);
   buildPiano88();
   renderPillarCompass();
   updateStaticLabels();
   renderPrimer();
   loadTrack(state.index,{time:state.positions[state.index]||0,autoplay:false,preservePillar:false,scroll:false});
+  setViewMode(state.viewMode);
 })();
