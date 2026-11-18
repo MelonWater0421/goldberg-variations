@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#090d16">
+  <meta name="description" content="巴赫《哥德堡变奏曲》BWV 988 零基础双语互动建筑馆（任奫灿 Yunchan Lim · 2025 卡内基音乐厅现场），从什么是变奏开始，搭载32根黄金地基罗盘、多声部丝带卷帘与88键交叉透视琴键。">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <title>Goldberg Variations · 巴赫《哥德堡变奏曲》零基础互动建筑馆 (Yunchan Lim · Carnegie Hall)</title>
+  <link rel="stylesheet" href="style.css?v=gb1">
+  <script defer src="data.js?v=gb1"></script>
+  <script defer src="engine.js?v=gb1"></script>
+  <script defer src="app.js?v=gb1"></script>
+</head>
+<body>
+<a class="skip" href="#content" id="skipLink">跳到主内容</a>
+<audio id="audio" preload="metadata"></audio>
+
+<header id="console" class="console">
+  <div class="console-inner">
+    <div class="console-top">
+      <div class="brand">
+        <div class="dg" aria-hidden="true"><span>BWV</span><small>988</small></div>
+        <div class="brand-text">
+          <h1 id="consoleTitle">巴赫《哥德堡变奏曲》零基础互动建筑馆</h1>
+          <p>
+            <span class="rec-pill" id="recBadge">Yunchan Lim · Live at Carnegie Hall (2025)</span>
+            <span class="desktop-only quiet" id="consoleSub"> · 32根承重地基 · 九重卡农阶梯 · 88键声部透视</span>
+          </p>
+        </div>
+      </div>
+      <div class="utilities">
+        <button id="btnPrimerNav" class="gold-soft">🎓 零基础三步懂变奏</button>
+        <button id="btnMatrixNav">🗺️ 32章建筑图</button>
+        <button data-action="threads" id="btnThreads">暗线</button>
+        <button data-action="glossary" id="btnGlossary">词典</button>
+        <button data-action="sources" id="btnSources">资料</button>
+        <button id="themeBtn" aria-label="切换深浅主题">☀</button>
+        <button id="langBtn" aria-label="Switch language / 切换语言">English</button>
+      </div>
+    </div>
+
+    <div class="transport-bar">
+      <div class="transport-left">
+        <button id="prevTrack" title="上一章">◀</button>
+        <button id="play" class="play-btn">▶ 播放卡内基原声</button>
+        <button id="nextTrack" title="下一章">▶</button>
+        <select id="trackSelect" aria-label="选择乐章 / Select Variation"></select>
+        <div class="nudge-group">
+          <button id="back5">-5s</button>
+          <button id="forward5">+5s</button>
+        </div>
+        <span class="clock"><b id="currentTime">00:00</b> / <span id="totalTime">00:00</span></span>
+        <label class="speed-wrap"><span class="sr-only" id="speedLabel">速度</span>
+          <select id="speedSelect" aria-label="Playback speed">
+            <option value="0.75">0.75×</option>
+            <option value="1" selected>1×</option>
+            <option value="1.25">1.25×</option>
+          </select>
+        </label>
+      </div>
+      <div class="transport-right">
+        <button id="pillarLockBtn" class="pill-toggle active" aria-pressed="true" title="切换变奏时自动对齐到同一根地基立柱位置">🔗 同地基柱瞬移：开</button>
+        <button id="continuousBtn" class="pill-toggle active" aria-pressed="true">整部连播</button>
+        <button id="loopStageBtn" class="pill-toggle" aria-pressed="false">循环本段</button>
+      </div>
+    </div>
+
+    <div class="wave-row">
+      <div class="wave-wrap" id="waveWrap">
+        <canvas id="waveCanvas" height="40"></canvas>
+        <input id="scrub" type="range" min="0" max="100" step="0.05" value="0" aria-label="音频进度条">
+        <div id="waveHover" class="wave-hover" hidden>00:00</div>
+      </div>
+    </div>
+
+    <div class="telemetry-bar">
+      <div class="live-status">
+        <span id="liveTrackBadge" class="badge-gold">Aria</span>
+        <span id="livePassBadge" class="badge-pass">A1</span>
+        <h2 id="liveStageTitle">加载中…</h2>
+        <span id="syncBadge" class="sync-badge">第 1 柱 · G (Do)</span>
+      </div>
+      <div class="same-pillar-strip" id="samePillarStrip" aria-label="同地基柱跨变奏对比"></div>
+    </div>
+
+    <details id="pillarCompassDetails" class="pillar-details" open>
+      <summary>
+        <span id="compassSummaryTitle">🏛️ 32根黄金地基实时罗盘（点击任意立柱直接跳听，所有30首变奏共享同一套地基！）</span>
+        <span id="compassSummaryHint" class="quiet">展开 / 收起地基罗盘</span>
+      </summary>
+      <div id="pillarGrid" class="pillar-grid" role="group" aria-label="32 Harmonic Pillars"></div>
+    </details>
+  </div>
+</header>
+
+<main id="content">
+  <!-- 1. ZERO-TO-ONE INTERACTIVE PRIMER FOR COMPLETE BEGINNERS -->
+  <section id="primerSection" class="panel primer-panel">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow" id="primerEyebrow">ZERO-JARGON INTERACTIVE SANDBOX · 零识谱互动入门</span>
+        <h2 id="primerHeadline">从零开始：不识谱，怎么在 60 秒内听懂《哥德堡变奏曲》？</h2>
+        <p id="primerIntro" class="quiet"></p>
+      </div>
+      <button id="togglePrimerBody" class="secondary-small">收起入门沙盒 ▲</button>
+    </div>
+    <div id="primerBody" class="primer-grid"></div>
+  </section>
+
+  <!-- 2. CURRENT VARIATION ARCHITECTURAL DECODER -->
+  <section id="chapterHero" class="panel hero-panel">
+    <div class="hero-top">
+      <div>
+        <div class="hero-badges" id="heroBadges"></div>
+        <h2 id="chapterTitle">Aria</h2>
+        <p id="chapterSubtitle" class="quiet"></p>
+      </div>
+      <div class="hero-actions">
+        <a id="scorePdfLink" class="score-link" href="#" target="_blank" rel="noopener noreferrer">📖 查看原版乐谱页 ↗</a>
+      </div>
+    </div>
+    <div class="decoder-cards">
+      <article class="decoder-card hook-card">
+        <h3 id="hookHeading">👂 小白前 5 秒怎么听？</h3>
+        <p id="chapterHook"></p>
+      </article>
+      <article class="decoder-card recipe-card">
+        <h3 id="recipeHeading">🏛️ 巴赫的变奏配方</h3>
+        <p id="chapterRecipe"></p>
+      </article>
+      <article class="decoder-card lim-card">
+        <h3 id="limHeading">🎹 任奫灿卡内基现场密码</h3>
+        <p id="chapterLimNote"></p>
+      </article>
+    </div>
+  </section>
+
+  <!-- 3. LIVE MULTI-VOICE RIBBON + 88-KEY PIANO VISUALIZER -->
+  <section id="voiceLab" class="panel lab-panel">
+    <div class="lab-head">
+      <div>
+        <div class="lab-title-row">
+          <span class="lab-badge" id="labBadge">声部透视镜</span>
+          <h2 id="labTitle">多声部丝带卷帘 & 88键声部交叉透视琴键</h2>
+          <span id="crossingBadge" class="crossing-badge" hidden>⇄ 声部高低交叉中！</span>
+        </div>
+        <p id="labDesc" class="quiet">播放任奫灿卡内基原声时，下方声部丝带与 88 键钢琴将实时同步点亮；你也可以点击「拆解单声部合成试听」单独静音或独奏任意一根旋律线。</p>
+      </div>
+      <div class="lab-controls">
+        <button id="synthPlayBtn" class="synth-btn">🎹 拆解合成试听当前段</button>
+        <button id="ghostBassBtn" class="pill-toggle" aria-pressed="false" title="在合成试听中叠加巴赫原始32音黄金地基钟声">🔔 叠加黄金地基钟声</button>
+        <button id="resetVoicesBtn" class="secondary-small">重置全部声部</button>
+      </div>
+    </div>
+
+    <div id="voiceControls" class="voice-controls"></div>
+
+    <div class="ribbon-wrap">
+      <canvas id="ribbonCanvas" height="190"></canvas>
+    </div>
+
+    <div class="keyboard-wrap">
+      <div class="keyboard-caption">
+        <span id="kbCaptionLeft">88键施坦威音区透视（低音 A0 → 高音 C8 · 颜色对应上方独立声部）</span>
+        <span id="kbActiveNotes" class="mono-gold">—</span>
+      </div>
+      <div id="piano88" class="piano88" role="img" aria-label="88-key virtual piano"></div>
+    </div>
+  </section>
+
+  <!-- 4. STRUCTURAL STAGES & CLICKABLE EAR-CUES -->
+  <section id="stagesSection" class="panel stages-panel">
+    <div class="section-head">
+      <div>
+        <h2 id="stagesHeading">本章分段导览与关键听点</h2>
+        <p id="stagesSub" class="quiet">点击任意段落卡或时间胶囊即可精准跳转至任奫灿现场对应乐句。</p>
+      </div>
+    </div>
+    <div id="stagesGrid" class="stages-grid"></div>
+  </section>
+
+  <!-- 5. 32-CHAPTER ARCHITECTURAL CATHEDRAL MATRIX (10 TRIADS) -->
+  <section id="matrixSection" class="panel matrix-panel">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow" id="matrixEyebrow">ARCHITECTURAL MASTERPLAN · 十组三联画与对称双翼</span>
+        <h2 id="matrixHeading">哥德堡宇宙全景建筑图（Aria → 10组「舞曲 · 炫技 · 卡农」三联画 → Aria da capo）</h2>
+        <p id="matrixSub" class="quiet">巴赫并不是随便写了30首变奏：每3首组成一组「1 性格体裁 · 2 双排键炫技 · 3 卡农阶梯（从一度一直爬升到九度！）」，并在第16变奏以宏伟的法国序曲将全曲对折为上下两翼。</p>
+      </div>
+    </div>
+    <div id="matrixFilters" class="matrix-filters"></div>
+    <div id="matrixContainer" class="matrix-container"></div>
+  </section>
+
+  <footer class="footer">
+    <span id="footerLeft">J.S. Bach · Goldberg Variations, BWV 988 · Yunchan Lim (Live at Carnegie Hall, 2025)</span>
+    <div class="footer-links">
+      <button data-action="threads" id="footThreads">六条建筑暗线</button>
+      <button data-action="glossary" id="footGlossary">零基础术语词典</button>
+      <button data-action="sources" id="footSources">音源与开源乐谱声明</button>
+    </div>
+  </footer>
+</main>
+
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+<dialog id="dialog">
+  <div class="dialog-head">
+    <h2 id="dialogTitle"></h2>
+    <button id="dialogClose" aria-label="Close">×</button>
+  </div>
+  <div id="dialogBody"></div>
+</dialog>
+</body>
+</html>
